@@ -1,0 +1,93 @@
+---
+title: "Assignment 7 DATA 607 Books"
+author: "Alexander Ng"
+date: March 17, 2019
+output: 
+  html_document:
+    df_print: paged
+    highlight: pygments
+    number_sections: yes
+    theme: readable
+    toc: yes
+    toc_depth: 2
+    toc_float: false
+editor_options: 
+  chunk_output_type: console
+---
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(XML)
+library(htmltab)
+library(RCurl)
+library(jsonlite)
+```
+
+## Creating the Source Files
+
+The source files in HTML,  XML, JSON formats are created manually for 3 books.
+
+```{r}
+urlhtml = "https://raw.githubusercontent.com/completegraph/DataStore/master/book.html"
+urljson = "https://raw.githubusercontent.com/completegraph/DataStore/master/book.json"
+urlxml  = "https://raw.githubusercontent.com/completegraph/DataStore/master/book.xml"
+
+```
+
+# HTML Version
+
+
+The original table uses rowspan to convey the 1-to-many relationship of a book to its co-authors.
+This is illustrated below.
+
+![HTML with table](https://raw.githubusercontent.com/completegraph/DataStore/master/HTML_Book_Table.png)
+
+However, in the parsed version, using the XML library, we see that translating the rowspanning arguments into a data frame creates additional rows for each co-author.  This is because the common columns are duplicated for each co-author.  Where the original HTML table shows 3 books, the XML and htmltab packages create a table of 6 rows.
+
+
+```{r}
+url1 = getURL(urlhtml)
+hobj = htmlParse(url1)
+booksTable = htmltab(hobj, which=1)
+knitr::kable(booksTable)
+```
+
+## XML Version
+
+We can use the xmlParse() command to load the document.
+xmlSApply recursively traverses the XML document to extract the value.
+Note that the authors have been compressed into a single text string.
+Additional work will be required to unmangle the authors.
+
+```{r}
+url2 = getURL(urlxml)
+
+xobj = xmlParse( url2)
+root = xmlRoot(xobj)
+
+dfxml = xmlSApply(root, function(x) xmlSApply(x, xmlValue))
+df2  = data.frame(t(dfxml), row.names=NULL)
+knitr::kable(df2)
+```
+
+
+## JSON Version
+
+The JSON file format is the only one to preserve the structural format of the co-authorship.
+The raw file is converted from JSON into a dataframe directly by the jsonlite library.
+
+```{r}
+jobj = fromJSON(urljson)
+
+knitr::kable(jobj)
+```
+
+By inspecting the dataframe in more detail, we see that the individual coauthors are stored in a nested dataframe with data elements mapped correctly as in the first book.
+
+```{r}
+knitr::kable(jobj$books$Author[1])
+```
+
+## Conclusion
+
+Of the 3 formats, the resulting dataframes produces are quite different.  JSON does the best in preserving the logical structure of the original input data.   XML is next best but the available libraries do a mediocre job to display the data.  HTML does not encode the logical structure of the information but rather enforces presentational layer details into the design of its table.
