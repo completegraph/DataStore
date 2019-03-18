@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, th, td {
+  border: 1px solid blue;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 10px;
+  text-align: left;
+}
+</style>
+
+</head>
+<body>
+<h1>Data 607 - Assignment 7: HTML Version of Book Information</h1>
+
+In this exercise, we display seven fields for each book:
+
+<ul>
+  <li>Title</li>
+  <li>Authors
+	 <ul>
+  		<li>Last name</li>
+  		<li>First name</li>
+  		<li>Middle name</li>
+  	 </ul>
+  </li>
+  <li>ISBN</li>
+  <li>Publisher</li>
+  <li>Copyright</li>
+</ul>
+
+<table style="width:80%">
+  <tr>
+  	<th>Title</th>
+  	<th>ISBN</th>
+  	<th>Publisher</th>
+  	<th>Copyright</th>
+  	<th>LastName</th>
+  	<th>FirstName</th>
+  	<th>MiddleName</th>
+  </tr>
+  <tr>
+    <td rowspan=3>The econometrics of financial markets</td>
+    <td rowspan=3>9780691043012</td>
+    <td rowspan=3>Princeton University Press</td>
+    <td rowspan=3>1997</td>
+    <td>Campbell</td>
+    <td>John</td>
+    <td>Y.</td>
+  </tr>
+    <tr>
+      <td>Lo</td>
+      <td>Andrew</td>
+      <td>W.</td>
+  </tr>
+    <tr>
+      <td>MacKinlay</td>
+      <td>A.</td>
+      <td>Craig</td>
+  </tr>
+    <tr>
+      <td rowspan=2>Convex optimization</td>
+      <td rowspan=2>9780521833783</td>
+      <td rowspan=2>Cambridge University Press</td>
+      <td rowspan=2>2004</td>
+      <td>Boyd</td>
+      <td>Stephen</td>
+      <td></td>
+  </tr>
+    <tr>
+      <td>Vanderberghe</td>
+      <td>Lieven</td>
+      <td></td>
+  </tr>
+
+    <tr>
+      <td>The shifts and the shocks:  what we've learned - and have still to learn from the financial crisis</td>
+      <td>9781594205446</td>
+      <td>Penguin Press</td>
+      <td>2014</td>
+      <td>Wolf</td>
+      <td>Martin</td>
+      <td></td>
+  </tr>
+</table>
+</body>
+</html>

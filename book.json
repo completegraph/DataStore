@@ -1,0 +1,42 @@
+{
+   "books": [
+
+   {
+       "Title":  "The econometrics of financial markets" ,
+       "ISBN":   "9780691043012" ,
+       "Publisher":  "Princeton University Press" ,
+       "Copyright":  1997 ,
+       "Author"   :  [ 
+                       {"Last Name": "Campbell", "First Name": "John", "Middle Name": "Y." },
+                       {"Last Name": "Lo", "First Name": "Andrew", "Middle Name": "W." },
+                        {"Last Name": "MacKinlay", "First Name": "A.", "Middle Name": "Craig" } 
+                     ] 
+   } ,
+
+   {
+       "Title":  "Convex optimization" ,
+       "ISBN":   "9780521833783" ,
+       "Publisher":  "Cambridge University Press" ,
+       "Copyright":  2004 ,
+       "Author"   :  [ 
+                       {"Last Name": "Boyd", "First Name": "Stephen", "Middle Name": null },
+                       {"Last Name": "Vanderberghe", "First Name": "Lieven", "Middle Name": null }
+                     ] 
+   } ,
+
+
+   {
+       "Title":  "The shifts and the shocks:  what we've learned - and have still to learn from the financial crisis" ,
+       "ISBN":   "9781594205446" ,
+       "Publisher":  "Penguin Press" ,
+       "Copyright":  2014 ,
+       "Author"   :  [ 
+                       {"Last Name": "Wolf", "First Name": "Martin", "Middle Name": null }
+                     ] 
+   }
+   ]
+}
+
+
+
+

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<books>
+
+   <book>
+       <Title>The econometrics of financial markets</Title>
+       <ISBN>9780691043012</ISBN>
+       <Publisher>Princeton University Press</Publisher>
+       <Copyright>1997</Copyright>
+       <Authors>    
+            <Author>
+                <LastName>Campbell</LastName>
+                <FirstName>John</FirstName>
+                <MiddleName>Y.</MiddleName>
+            </Author>
+            <Author>
+	         <LastName>Lo</LastName>
+	         <FirstName>Andrew</FirstName>
+	         <MiddleName>W.</MiddleName>
+            </Author>
+            <Author>
+	        <LastName>MacKinlay</LastName>
+	        <FirstName>A.</FirstName>
+	        <MiddleName>Craig</MiddleName>
+            </Author>
+        </Authors>
+   </book>
+   <book>
+       <Title>Convex optimization</Title>
+       <ISBN>9780521833783</ISBN>
+       <Publisher>Cambridge University Press</Publisher>
+       <Copyright>2004</Copyright>
+       <Authors>    
+            <Author>
+                <LastName>Boyd</LastName>
+                <FirstName>Stephen</FirstName>
+                <MiddleName></MiddleName>
+            </Author>
+            <Author>
+	         <LastName>Vanderberghe</LastName>
+	         <FirstName>Lieven</FirstName>
+	         <MiddleName></MiddleName>
+            </Author>
+        </Authors>
+   </book>
+   <book>
+       <Title>The shifts and the shocks:  what we've learned - and have still to learn from the financial crisis</Title>
+       <ISBN>9781594205446</ISBN>
+       <Publisher>Penguin Press</Publisher>
+       <Copyright>2014</Copyright>
+       <Authors>    
+            <Author>
+                <LastName>Wolf</LastName>
+                <FirstName>Martin</FirstName>
+                <MiddleName></MiddleName>
+            </Author>
+        </Authors>
+   </book>
+</books>
