@@ -1,0 +1,283 @@
+---
+title: "Project 4 - Ham-Spam"
+author: "Alexander Ng"
+date: "4/13/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+This project uses the caret library and tm text mining package to analyze spam and ham email message with the objective of classifying messages.  In the first section below, we load and clean the email messages.   Then, we build document term matrices and stage the data to feed into the caret models.  In the third section, we run some exploratory data analysis.  In the fourth section, we run an SVM model to predict classification on a test set and discuss results.
+
+
+```{r message=FALSE,warning=FALSE}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(tm)
+library(wordcloud)
+library(SnowballC)
+library(caret)
+library(tidytext)
+```
+
+
+
+## Loading and Cleaning the Emails
+
+The spamassassin data sets were downloaded from spam and easy ham.   Specifically, we used 20030228_spam.tar.bz2 and 20021010_easy_ham.tar.bz2.   These files were downloaded and locally processed for this project.
+
+```{r, define-root-dirs}
+root_dir = 'E:/dat/ang/datascience/607_DATA_ACQUISITION_2019_SPRING/PROJECT4/'
+
+spam_dir = paste0(root_dir, "spam") 
+ham_dir = paste0(root_dir, "easy_ham") 
+
+```
+
+The tm package was used with VCorpus (volatile corpus) to load the email messages into memory.  There were 501 spam and 2551 ham messages.
+
+```{r, create-corpuses}
+
+spam_corp = VCorpus(DirSource(spam_dir) )
+ham_corp = VCorpus(DirSource(ham_dir))
+
+# Take a look at each corpus
+spam_corp
+ham_corp
+
+```
+
+
+Next, we merged the corpus into a joint corpus. The *tm* package overloads the C() operator to allow merging of VCorpus objects.
+The joint corpus will be needed to fabricate a joint document term matrix.
+
+```{r}
+# tm packet allows merging of corpera using the c() method override as an S3 class.
+
+joint_corp = c( spam_corp, ham_corp )   
+
+for(idx in 1:length(spam_corp))
+{
+      meta(joint_corp[[idx]], "message_type") = "spam"
+}
+
+spam_offset = length(spam_corp)
+
+for(jdx in 1:length(ham_corp))
+{
+      meta(joint_corp[[spam_offset + jdx]], "message_type") = "ham"
+}
+
+# Create a vector of factor of the message_type.  This is required for the caret package later.
+
+joint_type = as.factor( as.vector(unname( unlist( meta( joint_corp, "message_type") ) ) ) )
+
+head(joint_type)
+
+str(joint_type)
+
+```
+
+
+```{r, fixed-utf8-encoding}
+# This line of code is to transfer non-text characters into UTF-8 MAC character set.
+# https://stackoverflow.com/questions/9637278/r-tm-package-invalid-input-in-utf8towcs
+#
+
+transform_corpus <- function(corpus)
+{
+  corpus = tm_map( corpus, content_transformer( function(x) iconv( enc2utf8(x), sub="byte") ) )
+  corpus = tm_map( corpus, content_transformer(PlainTextDocument) )
+  corpus = tm_map( corpus, content_transformer(tolower))
+
+  corpus = tm_map( corpus, content_transformer(removePunctuation))
+  corpus = tm_map( corpus, content_transformer(removeNumbers) )
+
+  corpus = tm_map( corpus, content_transformer(stripWhitespace))
+  corpus = tm_map( corpus, stemDocument , language = "en" )
+
+  html_stop_words = c("html", "tbody", "tr", "body", "td", "center", "<p>", "<br>", "center", "font", "receiv", "requir", "spamassassin")
+
+  corpus = tm_map(corpus, removeWords, c(html_stop_words, stopwords("english")))
+
+  return(corpus)
+}
+
+
+spam_corp = transform_corpus(spam_corp)
+
+ham_corp  = transform_corpus(ham_corp)
+
+joint_corp = transform_corpus(joint_corp)
+
+```
+
+I use a sparsity parameter of .85 in order to remove terms from both the document term matrix of the spam and ham.
+This preserves about 130 terms.
+
+
+```{r, document-term-matrix}
+
+spam_dtm = DocumentTermMatrix(spam_corp)
+
+spam_dtm = removeSparseTerms(spam_dtm, 0.85)
+
+ham_dtm = DocumentTermMatrix(ham_corp)
+
+ham_dtm = removeSparseTerms(ham_dtm, 0.85)
+
+
+dim(spam_dtm)
+dim(ham_dtm)
+
+```
+
+For the joint document term matrix, we append the joint_type (spam or ham) column in order to run the caret training.
+The dtm is used by caret both for model calibration and evaluation.
+So the classification information in the joint_type column is required as input.
+
+```{r, joint-document-term-matrix}
+
+joint_dtm = DocumentTermMatrix(joint_corp)
+joint_dtm = removeSparseTerms(joint_dtm, 0.85)
+
+dim(joint_dtm)
+
+
+joint_dtm = as.data.frame( as.matrix( joint_dtm ) )
+joint_dtm = cbind( joint_dtm, as.data.frame( joint_type ) )
+
+```
+
+
+## Analyzing Word Frequencies of the Document Term Matrices
+
+The next sections describe exploratory data analysis of frequency and word cloud.
+We see that the terms extracted by the text mining process give 3-4 percent frequency of the most common information.
+However, by Zipf's Law, the word frequency decays rapidly for less common terms.
+
+However, it appears difficult to see clear patterns in the ham and spam text analysis.
+Much of the text is gibberish.   However, one theme appears to be that prevalence of font and formatting information in the spam.
+
+
+```{r}
+
+ham_count = colSums( as.matrix( ham_dtm) )
+ham_freq = ham_count / sum( ham_count)
+ham_freq = sort(ham_freq, decreasing = T)
+ham_count = sort( ham_count, decreasing=T)
+
+spam_count = colSums( as.matrix( spam_dtm))
+spam_freq = spam_count / sum(spam_count)
+spam_freq = sort(spam_freq, decreasing=T)
+spam_count = sort(spam_count, decreasing = T)
+
+head(ham_freq)
+
+head(spam_freq)
+```
+
+```{r message=FALSE,warning=FALSE}
+set.seed(103)
+wordcloud(words = names(spam_count), freq= spam_count, min.freq=1, max.words=100, random.order=FALSE, colors=brewer.pal(8,"Dark2") )
+
+
+wordcloud(words = names(ham_count), freq= ham_count, min.freq=1, max.words=100, random.order=FALSE, colors=brewer.pal(8,"Dark2") )
+
+
+spam_words_df = data.frame( words = names(spam_count), count = spam_count )
+ham_words_df = data.frame( words = names(ham_count), count = ham_count )
+
+ggplot(spam_words_df[1:10,], aes(x=reorder(words, count), y = count, fill=words) ) + geom_bar( stat= "identity")   + coord_flip() + scale_fill_brewer(palette="Spectral")+
+   ggtitle("Spam Top 10 Words")
+
+ggplot(ham_words_df[1:10,], aes(x=reorder(words, count), y = count, fill=words) ) + geom_bar( stat= "identity")   + coord_flip() + scale_fill_brewer(palette="Spectral")+
+   ggtitle("Ham Top 10 Words")
+```
+
+
+## Calibration the model and partitioning test and training data
+
+I use 80 percent of the spam and ham data to form the training set.
+Then the remaining 20 percent is used for the test set.
+To do this, we have to do some surgery on the joint dtm matrix.
+We gather 80 percent of the spam rows and 80 percent of the ham rows and stitch them together into a training dtm.
+
+
+```{r, test-training-set}
+
+(num_spam_training = floor(0.8 * length(spam_corp) ) )
+(num_spam_test = length(spam_corp) - num_spam_training )
+
+(num_ham_training = floor( 0.8 * length(ham_corp) ) )
+(num_ham_test = length(ham_corp) - num_ham_training)
+
+#training_corpus = c( tm_filter(spam_corp[1:num_spam_training], FUN=function(x) 1==1 ),
+#                     tm_filter(ham_corp[ 1:num_ham_training ], FUN=function(x) 1==1 ) )
+
+#test_corpus  = c( tm_filter( spam_corp[ (num_spam_training+1):length(spam_corp) ], FUN=function(x) 1==1 ),
+#                  tm_filter( ham_corp[(num_ham_training+1):length(ham_corp) ], FUN=function(x) 1==1 ) )
+
+
+
+#response_training = as.factor( unlist( meta(training_corpus, "message_type") ) )
+#response_test = as.factor( unlist( meta( test_corpus, "message_type") ) )
+
+
+```
+
+
+To build the test dtm, the easiest way to define its rows as the complement of the testing dtm rows.
+
+
+```{r}
+
+training_indices = c( 1:num_spam_training, (length(spam_corp) + 1 ):(length(spam_corp)+ num_ham_training ) )
+
+testing_indices = c(1:length(joint_corp))
+
+# Define the testing indices as the complement of the training indices
+# ------------------------------------------------------------------------------
+testing_indices = testing_indices[! testing_indices %in% training_indices]
+
+training_dtm = joint_dtm[training_indices,]
+
+testing_dtm = joint_dtm[ testing_indices, ]
+
+```
+
+
+## Modeling using SVM
+
+Using the SVM model to classify spam, we find that the confusion matrix shows the model is 99.18% accurate.
+Of course, the SVM model is perfectly accurate on the training set as well.
+
+```{r}
+
+training_model = train( joint_type ~., data=training_dtm, method='svmLinear3' )
+
+pred_training = predict( training_model, newdata=training_dtm )
+```
+
+```{r}
+pred_test = predict( training_model, newdata=testing_dtm)
+
+```
+
+```{r}
+
+( svm_cm = confusionMatrix( pred_test, testing_dtm$joint_type ) )
+
+( svm_cm_training = confusionMatrix( pred_training, training_dtm$joint_type))
+
+```
+
+We conclude that spam detection algorithms can be highly accurate based on this training exercise.  SVM is an effective method of classifying spam and ham.  However, time did not permit us to explore other methods fully.
+
