@@ -1,0 +1,134 @@
+---
+title: "LA Restaurant Health Inspections - Tidyverse Recipe"
+author: "Alexander Ng"
+date: "5/5/2019"
+output: 
+  html_document:
+      keep_md: TRUE
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+## Tidyverse Recipe
+
+Often a classification schema is implicitly used and displayed in a large dataset, but the classification schema itself is unavailable in an easy-to-use form.   This tidyverse recipe illustrates how to extract the classification data from a large dataset, identify all unique observed values and returned those unique values in a dataframe.   In effect, we will use the dplyr package to perform these basic transformations.
+
+## An Example:  LA Restaurant Health Inspections
+
+A basic example is the set of restaurant health inspections collected for all restaurants in the City of Los Angeles by the Los Angeles Environmental Health Department.   The department publishes this dataset as a csv file to Kaggle.  The file is large and contains 58,872 rows and 20 columns.   Moreover, file is approximately 14MB in size.  This file will represent our large dataset for this recipe.
+
+Moreover, certain columns are repetitive and clearly important for underlying the scope and complexity of the inspection assessment.  These include pe_description (which means program element description) and program_element_pe (a 4 digit numeric code).
+
+Examples of the pe_description field values are:
+
+* pe_description:  RESTAURANT (0-30) SEATS MODERATE RISK
+* pe_description:  RESTAURANT (61-150) SEATS HIGH RISK
+* pe_description:  FOOD MKT RETAIL (25-1,999 SF) LOW RISK
+
+Examples of the program_element_pe values are:
+
+* 1631
+* 1630
+* 1636
+
+We decide to select two columns of the data file:  pe_description and program_element_pe to define our classification schema.
+
+The tidyverse recipe will then seek to report all unique 2-tuples of (pe_description, program_element_pe) in the data set.
+
+We will also repeat the recipe to seek all unique 1-tuples of distinct (pe_description) and (program_element_pe)
+
+We can therefore answer three questions with this recipe:
+
+How many distinct pe_description values exist in the LA County Environmental Health classification schema?
+
+For a given pe_description, do all restaurants get assigned the same program_element_pe during their inspection?
+
+What are the distinct values for program_element_pe?
+
+## Data Source
+
+```{r}
+inspections = read_csv("https://raw.githubusercontent.com/completegraph/DataStore/master/Tidyverse/restaurant-and-market-health-inspections.csv")
+
+str(inspections)
+```
+## Using the *distinct* function in dplyr
+
+The function *distinct()* accomplishes this goal.  There are two ways to apply the function in this example.
+In the first way, we may choose to extract the subset of columns used to obtain the unique k-tuples.   In this case, k=2 or k=1.   The second way, a feature of distinct, allows use to obtain the unique k-tuples without extracting the subset of columns of interest.   We start by illustrating the first approach.
+
+### Approach 1: Taking a subset of columns to create a helper dataframe
+
+We illustrate this approach by extracting an intermediate dataframe to which the *distinct* function is applied.
+In the code below, we use *select* to choose the columns of interest and then *distinct* to get all distinct k-tuples.
+Lastly, we sort the unique values by some ordering.
+
+```{r}
+
+inspections %>% select( pe_description, program_element_pe) -> trimmed_dataframe
+
+trimmed_dataframe %>% distinct() %>% arrange(pe_description, program_element_pe) -> distinct_two_tuples
+
+str(distinct_two_tuples)
+
+distinct_two_tuples %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover")) %>%
+   scroll_box(width="85%",  height="200px")
+
+```
+
+Let's test whether the two values are assigned in a 1-to-1 correspondence to each other.  
+
+
+```{r}
+inspections %>% select(pe_description) %>% distinct() %>% arrange(pe_description) -> distinct_pe_description
+inspections %>% select(program_element_pe ) %>% distinct() %>% arrange(program_element_pe) -> distinct_program_element_pe
+
+nrow(distinct_pe_description)
+nrow(distinct_program_element_pe)
+nrow(distinct_two_tuples)
+```
+
+We see that both the 2-tuples and 1-tuples are all the same size.   This implies that the mapping between the two columns is 1-to-1.  
+
+### Approach 2: Finding distinct tuples without a helper dataframe
+
+The second approach is feasible because of the clever syntax of the *distinct* function.
+*distinct* allows the identification of unique k-tuples by allowing the user to specify the k column names to use.
+
+
+We illustrate the avoidance of the helper dataframe below.
+
+
+```{r}
+
+inspections %>% distinct( pe_description, program_element_pe) %>% 
+    arrange(pe_description) %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    scroll_box(width="90%", height="200px")
+```
+
+
+  In addition, if the *.keep_all* option is set to TRUE, the user can even obtain the first matching entire row of the dataset associated with each unique k-tuple. We illustrate the ability to keep a representative row of the complete set of columns below.
+
+```{r}
+inspections %>% distinct( pe_description, .keep_all=TRUE) %>% 
+    arrange(pe_description) %>% 
+    select(pe_description, program_element_pe, everything()) %>%   # place the pe_description column first
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    scroll_box(width="85%", height="200px" )
+```
+
+## Conclusion
+
+The ability to extract classification schema from a larger data set is a frequently required recipe.  Outside of data science, one can easily do this process using Excel and a pivot table to get distinct values for a single column.  It is even possible though non-trivial to obtain the unique 2-tuples.  However, it is more difficult to get a representative row of an entire dataset in Excel using the pivot table approach for getting distinct values.   Thus, the tidyverse recipe approach clearly shows more flexibility and power rather quickly.
+
+
